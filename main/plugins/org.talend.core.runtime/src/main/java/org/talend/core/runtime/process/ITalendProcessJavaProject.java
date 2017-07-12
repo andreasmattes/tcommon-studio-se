@@ -151,5 +151,7 @@ public interface ITalendProcessJavaProject {
      * Reset the main pom to empty the content of the job dependencies.
      */
     void regenerateMainProjectPom(IProgressMonitor monitor) throws Exception;
+    
+    void setSynchronizerArgumentMap(Map<String, Object> argumentsMap);
 
 }

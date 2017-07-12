@@ -56,6 +56,8 @@ public interface ILibrariesService extends IService {
     public List<URL> getTalendRoutines();
 
     public String getPerlLibrariesPath();
+    
+    public void deployLibrary(URL source, boolean reset) throws IOException;
 
     public void deployLibrary(URL source) throws IOException;
     
@@ -104,8 +106,6 @@ public interface ILibrariesService extends IService {
     List<ModuleNeeded> getModuleNeeded(String id, boolean isGroup);
     
     public void deployProjectLibrary(File source) throws IOException;
-
-    public boolean isMavenArtifactAvailable(String mvnUri);
 
     /**
      * Listener used to fire that libraries status has been changed (new lib or new check install).

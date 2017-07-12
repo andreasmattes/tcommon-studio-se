@@ -47,6 +47,11 @@ public class LibrariesService implements ILibrariesService {
     private ILibrariesService getLibrariesService() {
         return javaService;
     }
+    
+    @Override
+    public void deployLibrary(URL source, boolean reset) throws IOException {
+        this.getLibrariesService().deployLibrary(source, reset);      
+    }
 
     @Override
     public void deployLibrary(URL source) throws IOException {
@@ -237,11 +242,6 @@ public class LibrariesService implements ILibrariesService {
     @Override
     public void deployProjectLibrary(File source) throws IOException{
        this.getLibrariesService().deployProjectLibrary(source);
-    }
-
-    @Override
-    public boolean isMavenArtifactAvailable(String mvnUri) {
-        return getLibrariesService().isMavenArtifactAvailable(mvnUri);
     }
 
     @Override
