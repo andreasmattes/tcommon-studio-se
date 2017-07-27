@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Assert;
 import org.junit.Test;
 import org.talend.commons.utils.VersionUtils;
+import org.talend.core.model.general.Project;
 import org.talend.core.model.process.JobInfo;
 import org.talend.core.model.properties.PropertiesFactory;
 import org.talend.core.model.properties.Property;
@@ -30,34 +31,17 @@ import org.talend.repository.ProjectManager;
  */
 public class PomIdsHelperTest {
 
+
     @Test
     public void test_getProjectGroupId_empty() {
-        String projectGroupId = PomIdsHelper.getProjectGroupId(null);
+        Project currentProject = ProjectManager.getInstance().getCurrentProject();
+        String expectValue = "org.talend.master";
+        if (currentProject != null) {
+            expectValue = expectValue + '.' + currentProject.getTechnicalLabel().toLowerCase();
+        }
+        String projectGroupId = PomIdsHelper.getProjectGroupId();
         Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master", projectGroupId);
-
-        projectGroupId = PomIdsHelper.getProjectGroupId("");
-        Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master", projectGroupId);
-
-        projectGroupId = PomIdsHelper.getProjectGroupId("   ");
-        Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master", projectGroupId);
-    }
-
-    @Test
-    public void test_getProjectGroupId() {
-        String projectGroupId = PomIdsHelper.getProjectGroupId("abc");
-        Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master.abc", projectGroupId);
-
-        projectGroupId = PomIdsHelper.getProjectGroupId("ABC");
-        Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master.abc", projectGroupId);
-
-        projectGroupId = PomIdsHelper.getProjectGroupId(" Abc  ");
-        Assert.assertNotNull(projectGroupId);
-        Assert.assertEquals("org.talend.master.abc", projectGroupId);
+        Assert.assertEquals(expectValue, projectGroupId);
     }
 
     @Test
