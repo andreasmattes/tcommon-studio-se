@@ -42,6 +42,8 @@ import org.talend.repository.model.RepositoryConstants;
  */
 public class TalendLibsServerManager {
 
+    public static final String KEY_LIB_REPO_URL = "org.talend.libraries.repo.url";
+
     private static String NEXUS_USER = "nexus.user";
 
     private static String NEXUS_PASSWORD = "nexus.password";
@@ -206,7 +208,7 @@ public class TalendLibsServerManager {
         return mavenResolver;
 
     }
-    
+
     public void checkAndUpdateNexusServer() {
         lastConnectionValid = null;
         getCustomNexusServer();
@@ -244,8 +246,8 @@ public class TalendLibsServerManager {
 
                     if (adminUrl != null && !"".equals(adminUrl)
                             && GlobalServiceRegister.getDefault().isServiceRegistered(IRemoteService.class)) {
-                        IRemoteService remoteService = (IRemoteService) GlobalServiceRegister.getDefault()
-                                .getService(IRemoteService.class);
+                        IRemoteService remoteService = (IRemoteService) GlobalServiceRegister.getDefault().getService(
+                                IRemoteService.class);
                         NexusServerBean bean = remoteService.getLibNexusServer(userName, password, adminUrl);
                         if (bean != null) {
                             nexus_url = bean.getServer();
@@ -281,8 +283,8 @@ public class TalendLibsServerManager {
             serverBean = null;
             ExceptionHandler.process(e);
         }
-        if (previousCustomBean == null && serverBean != null
-                || previousCustomBean != null && !previousCustomBean.equals(serverBean)) {
+        if (previousCustomBean == null && serverBean != null || previousCustomBean != null
+                && !previousCustomBean.equals(serverBean)) {
             mavenResolver = null;
         }
         previousCustomBean = serverBean;
@@ -292,7 +294,7 @@ public class TalendLibsServerManager {
 
     public NexusServerBean getLibrariesNexusServer() {
         NexusServerBean serverBean = new NexusServerBean();
-        serverBean.setServer(System.getProperty("org.talend.libraries.repo.url", TALEND_LIB_SERVER));
+        serverBean.setServer(System.getProperty(KEY_LIB_REPO_URL, TALEND_LIB_SERVER));
         serverBean.setUserName(TALEND_LIB_USER);
         serverBean.setPassword(TALEND_LIB_PASSWORD);
         serverBean.setRepositoryId(TALEND_LIB_REPOSITORY);
@@ -324,15 +326,15 @@ public class TalendLibsServerManager {
         try {
             if (adminUrl != null && !"".equals(adminUrl)
                     && GlobalServiceRegister.getDefault().isServiceRegistered(IRemoteService.class)) {
-                IRemoteService remoteService = (IRemoteService) GlobalServiceRegister.getDefault()
-                        .getService(IRemoteService.class);
+                IRemoteService remoteService = (IRemoteService) GlobalServiceRegister.getDefault().getService(
+                        IRemoteService.class);
                 NexusServerBean serverBean = remoteService.getUpdateRepositoryUrl(userName, password, adminUrl);
                 String nexus_url = serverBean.getServer();
                 String nexus_user = serverBean.getUserName();
                 String nexus_pass = serverBean.getPassword();
                 String nexus_repository = serverBean.getRepositoryId();
-                boolean connectionOK = NexusServerUtils.checkConnectionStatus(nexus_url, nexus_repository, nexus_user,
-                        nexus_pass);
+                boolean connectionOK = NexusServerUtils
+                        .checkConnectionStatus(nexus_url, nexus_repository, nexus_user, nexus_pass);
                 if (!connectionOK) {
                     return null;
                 }
