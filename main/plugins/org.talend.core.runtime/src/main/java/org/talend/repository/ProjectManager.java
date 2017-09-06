@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2017 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -362,11 +362,11 @@ public final class ProjectManager {
                         initCurrentProject();
                     }
 
-                    if (currentProject.getLabel().equalsIgnoreCase(projectLabel)) {
+                    if (isNameOfProject(projectLabel, currentProject)) {
                         return currentProject.getEmfProject();
                     }
                     for (Project project : getAllReferencedProjects()) {
-                        if (project.getLabel().equalsIgnoreCase(projectLabel)) {
+                        if (isNameOfProject(projectLabel, project)) {
                             return project.getEmfProject();
                         }
                     }
@@ -951,4 +951,17 @@ public final class ProjectManager {
 
         return list;
     }    
+
+    private static boolean isNameOfProject(String name, Project project) {
+        if (name == null) {
+            return false;
+        }
+        if (name.equals(project.getTechnicalLabel())) {
+            return true;
+        }
+        if (name.equalsIgnoreCase(project.getLabel())) {
+            return true;
+        }
+        return false;
+    }
 }
