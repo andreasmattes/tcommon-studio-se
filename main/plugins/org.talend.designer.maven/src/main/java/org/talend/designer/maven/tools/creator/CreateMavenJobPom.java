@@ -16,7 +16,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.runtime.CoreException;
@@ -564,14 +560,23 @@ public class CreateMavenJobPom extends AbstractMavenProcessorPom {
             Model model = MavenPlugin.getMavenModelManager().readMavenModel(getPomFile());
             List<Dependency> dependencies = model.getDependencies();
 
-            Set<ModuleNeeded> fullModulesList = LastGenerationInfo.getInstance()
-                    .getModulesNeededWithSubjobPerJob(parentProperty.getId(), parentProperty.getVersion());
+            Set<JobInfo> allJobs = LastGenerationInfo.getInstance().getLastGeneratedjobs();
+            Set<ModuleNeeded> fullModulesList = new HashSet<>();
+            for (JobInfo jobInfo : allJobs) {
+                fullModulesList.addAll(LastGenerationInfo
+                        .getInstance()
+                        .getModulesNeededWithSubjobPerJob(
+                        jobInfo.getJobId(), jobInfo.getJobVersion()));
+            }
 
             // add talend libraries and codes
             Set<String> talendLibCoordinate = new HashSet<>();
             String projectTechName = ProjectManager.getInstance().getProject(parentProperty).getTechnicalLabel();
             String projectGroupId = PomIdsHelper.getProjectGroupId(projectTechName);
             for (Dependency dependency : dependencies) {
+                if (MavenConstants.PACKAGING_POM.equals(dependency.getType())) {
+                    continue;
+                }
                 String dependencyGroupId = dependency.getGroupId();
                 String coordinate = dependencyGroupId + ":" + dependency.getArtifactId(); //$NON-NLS-1$
                 if (!childrenCoordinate.contains(coordinate)) {
@@ -585,13 +590,16 @@ public class CreateMavenJobPom extends AbstractMavenProcessorPom {
             // add 3rd party libraries
             Set<String> _3rdDepLib = new HashSet<>();
             for (Dependency dependency : dependencies) {
+                if (MavenConstants.PACKAGING_POM.equals(dependency.getType())) {
+                    continue;
+                }
                 String coordinate = dependency.getGroupId() + ":" + dependency.getArtifactId(); //$NON-NLS-1$
                 if (!childrenCoordinate.contains(coordinate) && !talendLibCoordinate.contains(coordinate)) {
                     _3rdDepLib.add(coordinate);
                     addItem(_3rdPartylibExcludes, coordinate, SEPARATOR);
                 }
             }
-            // add missing modules from the job generation of childrens
+            // add missing modules from the job generation of children
             for (ModuleNeeded moduleNeeded : fullModulesList) {
                 MavenArtifact artifact = MavenUrlHelper.parseMvnUrl(moduleNeeded.getMavenUri());
                 String coordinate = artifact.getGroupId() + ":" + artifact.getArtifactId(); //$NON-NLS-1$

@@ -56,11 +56,13 @@ import org.talend.core.ITDQItemService;
 import org.talend.core.PluginChecker;
 import org.talend.core.context.Context;
 import org.talend.core.context.RepositoryContext;
+import org.talend.core.hadoop.HadoopConstants;
 import org.talend.core.i18n.Messages;
 import org.talend.core.language.ECodeLanguage;
 import org.talend.core.language.LanguageManager;
 import org.talend.core.model.components.ComponentCategory;
 import org.talend.core.model.components.EComponentType;
+import org.talend.core.model.components.IComponent;
 import org.talend.core.model.general.ModuleNeeded;
 import org.talend.core.model.general.Project;
 import org.talend.core.model.metadata.IMetadataColumn;
@@ -497,15 +499,7 @@ public class ProcessorUtilities {
             mainRelation.setType(RelationshipItemBuilder.JOB_RELATION);
             hasLoopDependency = checkLoopDependencies(mainRelation);
             // clean the previous code in case it has deleted subjob
-            try {
-                IPath codePath = processor.getSrcCodePath().removeLastSegments(2);
-                IFolder srcFolder = processor.getTalendJavaProject().getProject().getFolder(codePath);
-                for (IResource resource : srcFolder.members()) {
-                    resource.delete(true, progressMonitor);
-                }
-            } catch (CoreException e) {
-                ExceptionHandler.process(e);
-            }
+            cleanSourceFolder(progressMonitor, currentProcess, processor);
         }
 
         // processor.cleanBeforeGenerate(TalendProcessOptionConstants.CLEAN_JAVA_CODES |
@@ -1011,15 +1005,7 @@ public class ProcessorUtilities {
                 mainRelation.setType(RelationshipItemBuilder.JOB_RELATION);
                 hasLoopDependency = checkLoopDependencies(mainRelation);
                 // clean the previous code in case it has deleted subjob
-                try {
-                    IPath codePath = processor.getSrcCodePath().removeLastSegments(2);
-                    IFolder srcFolder = processor.getTalendJavaProject().getProject().getFolder(codePath);
-                    for (IResource resource : srcFolder.members()) {
-                        resource.delete(true, progressMonitor);
-                    }
-                } catch (CoreException e) {
-                    ExceptionHandler.process(e);
-                }
+                cleanSourceFolder(progressMonitor, currentProcess, processor);
             }
 
             // processor.cleanBeforeGenerate(TalendProcessOptionConstants.CLEAN_JAVA_CODES
@@ -1143,6 +1129,29 @@ public class ProcessorUtilities {
             if (!oldMeasureActived) {
                 TimeMeasure.display = TimeMeasure.displaySteps = TimeMeasure.measureActive = false;
             }
+        }
+    }
+
+    /**
+     * DOC nrousseau Comment method "cleanSourceFolder".
+     * 
+     * @param progressMonitor
+     * @param currentProcess
+     * @param processor
+     */
+    public static void cleanSourceFolder(IProgressMonitor progressMonitor, IProcess currentProcess, IProcessor processor) {
+        try {
+            IPath codePath = processor.getSrcCodePath().removeLastSegments(2);
+            IFolder srcFolder = processor.getTalendJavaProject().getProject().getFolder(codePath);
+            String jobPackageFolder = JavaResourcesHelper.getJobClassPackageFolder(currentProcess);
+            for (IResource resource : srcFolder.members()) {
+                if (resource.getProjectRelativePath().toPortableString().endsWith(jobPackageFolder)) {
+                    break;
+                }
+                resource.delete(true, progressMonitor);
+            }
+        } catch (CoreException e) {
+            ExceptionHandler.process(e);
         }
     }
 
@@ -2006,6 +2015,15 @@ public class ProcessorUtilities {
         }
         // trunjob component
         EList<NodeType> nodes = ptype.getNode();
+        String paletteType = null;
+        String frameWork = ptype.getFramework();
+        if (frameWork == null) {
+            paletteType = ComponentCategory.CATEGORY_4_DI.getName();
+        } else if (frameWork.equals(HadoopConstants.FRAMEWORK_SPARK)) {
+            paletteType = ComponentCategory.CATEGORY_4_SPARK.getName();
+        } else if (frameWork.equals(HadoopConstants.FRAMEWORK_SPARK_STREAMING)) {
+            paletteType = ComponentCategory.CATEGORY_4_SPARKSTREAMING.getName();
+        }
         for (NodeType node : nodes) {
             boolean activate = true;
             // check if node is active at least.
@@ -2055,15 +2073,25 @@ public class ProcessorUtilities {
                     IJobletProviderService service = (IJobletProviderService) GlobalServiceRegister.getDefault()
                             .getService(IJobletProviderService.class);
                     if (service != null) {
-                        ProcessType jobletProcess = service.getJobletProcess(node);
-                        if (jobletProcess != null) {
-                            getAllJobInfo(jobletProcess, parentJobInfo, jobInfos, firstChildOnly);
+                        IComponent jobletComponent = service.getJobletComponent(node, paletteType);
+                        ProcessType jobletProcess = service.getJobletProcess(jobletComponent);
+                        if (jobletComponent != null) {
+                            if (!firstChildOnly) {
+                                getAllJobInfo(jobletProcess, parentJobInfo, jobInfos, firstChildOnly);
+                            } else {
+                                Property property = service.getJobletComponentItem(jobletComponent);
+                                JobInfo jobInfo = new JobInfo(property, jobletProcess.getDefaultContext());
+                                if (!jobInfos.contains(jobInfo)) {
+                                    jobInfos.add(jobInfo);
+                                    jobInfo.setFatherJobInfo(parentJobInfo);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-        if (!parentJobInfo.isTestContainer()
+        if (!parentJobInfo.isTestContainer() && !parentJobInfo.isJoblet()
                 && GlobalServiceRegister.getDefault().isServiceRegistered(ITestContainerProviderService.class)) {
             ITestContainerProviderService testContainerService = (ITestContainerProviderService) GlobalServiceRegister
                     .getDefault().getService(ITestContainerProviderService.class);
@@ -2102,11 +2130,24 @@ public class ProcessorUtilities {
         return getChildrenJobInfo(processItem, false);
     }
 
-    public static Set<JobInfo> getChildrenJobInfo(ProcessItem processItem, boolean firstChildOnly) {
+    public static Set<JobInfo> getChildrenJobInfo(Item processItem, boolean firstChildOnly) {
         // delegate to the new method, prevent dead loop method call. see bug 0004939: making tRunjobs work loop will
         // cause a error of "out of memory" .
-        JobInfo parentJobInfo = new JobInfo(processItem, processItem.getProcess().getDefaultContext());
-
+        JobInfo parentJobInfo = null;
+        ProcessType processType = null;
+        if (processItem instanceof ProcessItem) {
+            parentJobInfo = new JobInfo((ProcessItem) processItem,
+                    ((ProcessItem) processItem).getProcess().getDefaultContext());
+            processType = ((ProcessItem) processItem).getProcess();
+        } else {
+            if (GlobalServiceRegister.getDefault().isServiceRegistered(IJobletProviderService.class)) {
+                IJobletProviderService jobletService = (IJobletProviderService) GlobalServiceRegister.getDefault().getService(IJobletProviderService.class);
+                if (jobletService.isJobletItem(processItem)) {
+                    processType = jobletService.getJobletProcess(processItem);
+                    parentJobInfo = new JobInfo(processItem.getProperty(), processType.getDefaultContext());
+                }
+            }
+        }
         if (GlobalServiceRegister.getDefault().isServiceRegistered(ITestContainerProviderService.class)) {
             ITestContainerProviderService testContainerService = (ITestContainerProviderService) GlobalServiceRegister
                     .getDefault().getService(ITestContainerProviderService.class);
@@ -2114,8 +2155,10 @@ public class ProcessorUtilities {
                 parentJobInfo.setTestContainer(true);
             }
         }
-        return getAllJobInfo(processItem.getProcess(), parentJobInfo, new HashSet<JobInfo>(), firstChildOnly);
-
+        if (parentJobInfo != null && processType != null) {
+            return getAllJobInfo(processType, parentJobInfo, new HashSet<JobInfo>(), firstChildOnly);
+        }
+        return new HashSet<JobInfo>();
     }
 
     /**

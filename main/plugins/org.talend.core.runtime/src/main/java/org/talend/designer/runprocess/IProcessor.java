@@ -294,13 +294,11 @@ public interface IProcessor {
 
     String[] getJVMArgs();
 
-    Set<ModuleNeeded> getNeededModules();
-
-    Set<ModuleNeeded> getNeededModules(boolean withChildrenJobs);
+    Set<ModuleNeeded> getNeededModules(int options);
 
     Set<JobInfo> getBuildChildrenJobs();
 
-    Set<JobInfo> getBuildChildrenJobs(boolean firstChildOnly);
+    Set<JobInfo> getBuildFirstChildrenJobs();
 
     /**
      * used for old build job system. after maven build, can be removed.
