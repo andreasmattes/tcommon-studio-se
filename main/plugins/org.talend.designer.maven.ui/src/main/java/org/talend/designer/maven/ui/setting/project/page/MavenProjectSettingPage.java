@@ -114,7 +114,9 @@ public class MavenProjectSettingPage extends AbstractProjectSettingPage {
 	@Override
 	public boolean performOk() {
 		boolean ok = super.performOk();
-		preferenceStore.setValue(MavenConstants.POM_FILTER, filter);
+		if (preferenceStore != null) {
+			preferenceStore.setValue(MavenConstants.POM_FILTER, filter);
+		}
 		return ok;
 	}
 
