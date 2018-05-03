@@ -703,15 +703,16 @@ public class ModulesNeededProvider {
             EList imports = routine.getImports();
             for (Object o : imports) {
                 IMPORTType currentImport = (IMPORTType) o;
-                if (currentImport.isREQUIRED()) {
-
-                    // FIXME SML i18n
-                    ModuleNeeded toAdd = new ModuleNeeded(context, currentImport.getMODULE(), currentImport.getMESSAGE(),
-                            currentImport.isREQUIRED());
-                    toAdd.setMavenUri(currentImport.getMVN());
-                    // toAdd.setStatus(ELibraryInstallStatus.INSTALLED);
-                    importNeedsList.add(toAdd);
+                boolean isRequired = currentImport.isREQUIRED();
+                // FIXME SML i18n
+                ModuleNeeded toAdd = new ModuleNeeded(context, currentImport.getMODULE(), currentImport.getMESSAGE(),
+                        isRequired);
+                toAdd.setMavenUri(currentImport.getMVN());
+                if (!isRequired) {
+                	toAdd.setBundleName("osgi-exclude");
                 }
+                // toAdd.setStatus(ELibraryInstallStatus.INSTALLED);
+                importNeedsList.add(toAdd);
             }
         }
         return importNeedsList;
