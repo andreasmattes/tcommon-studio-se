@@ -708,7 +708,7 @@ public class ModulesNeededProvider {
                 ModuleNeeded toAdd = new ModuleNeeded(context, currentImport.getMODULE(), currentImport.getMESSAGE(),
                         isRequired);
                 toAdd.setMavenUri(currentImport.getMVN());
-                if (!isRequired) {
+                if (!isRequired && "BeanItem".equals(routine.eClass().getName())) {
                 	toAdd.setBundleName("osgi-exclude");
                 }
                 // toAdd.setStatus(ELibraryInstallStatus.INSTALLED);
