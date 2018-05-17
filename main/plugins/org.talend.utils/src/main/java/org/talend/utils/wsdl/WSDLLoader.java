@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -23,6 +23,8 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -64,12 +66,16 @@ public class WSDLLoader {
 
 	private final Map<String, Collection<URL>> importedSchemas = new HashMap<String, Collection<URL>>();
 
-	public Map<String, InputStream> load(String wsdlLocation, String filenameTemplate) throws InvocationTargetException {
-		filenameIndex = 0;
-		return load(null, wsdlLocation, filenameTemplate);
+	public WSDLLoader() {
+		super();
 	}
 
-	private Map<String, InputStream> load(URL baseURL, String wsdlLocation, String filenameTemplate) throws InvocationTargetException {
+	public Map<String, InputStream> load(String wsdlLocation, String filenameTemplate) throws InvocationTargetException {
+		filenameIndex = 0;
+		return load(null, wsdlLocation, filenameTemplate, new LinkedList<String>());
+	}
+
+	private Map<String, InputStream> load(URL baseURL, String wsdlLocation, String filenameTemplate, List<String> processedWSDLLocations) throws InvocationTargetException {
 		Map<String, InputStream> wsdls = new HashMap<String, InputStream>();
 		try {
 			final URL wsdlURL = getURL(baseURL, wsdlLocation);
@@ -90,10 +96,15 @@ public class WSDLLoader {
 			// wsdl:import
 			final NodeList imports = wsdlDocument.getElementsByTagNameNS(
 					WSDL_NS, "import");
+			processedWSDLLocations.add(wsdlLocation);
 			for(int index = 0; index < imports.getLength(); ++index) {
 				Element wsdlImport = (Element)imports.item(index);
+				String location = wsdlImport.getAttribute("locations");
+				if (processedWSDLLocations.contains(location)) {
+					continue;
+				}
 				String filename = String.format(filenameTemplate, filenameIndex++);
-				Map<String, InputStream> importedWsdls = new WSDLLoader().load(wsdlURL, wsdlImport.getAttribute("location"), filenameTemplate);
+				Map<String, InputStream> importedWsdls = new WSDLLoader().load(wsdlURL, location, filenameTemplate, processedWSDLLocations);
 				wsdlImport.setAttribute("location", filename);
 				wsdls.put(filename, importedWsdls.remove(DEFAULT_FILENAME));
 				wsdls.putAll(importedWsdls);
