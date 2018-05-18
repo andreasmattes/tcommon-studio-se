@@ -23,8 +23,6 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -72,10 +70,11 @@ public class WSDLLoader {
 
 	public Map<String, InputStream> load(String wsdlLocation, String filenameTemplate) throws InvocationTargetException {
 		filenameIndex = 0;
-		return load(null, wsdlLocation, filenameTemplate, new LinkedList<String>());
+		return load(null, wsdlLocation, filenameTemplate, new HashMap<String, String>());
 	}
 
-	private Map<String, InputStream> load(URL baseURL, String wsdlLocation, String filenameTemplate, List<String> processedWSDLLocations) throws InvocationTargetException {
+	private Map<String, InputStream> load(URL baseURL, String wsdlLocation, String filenameTemplate,
+			Map<String, String> processedWSDLLocations) throws InvocationTargetException {
 		Map<String, InputStream> wsdls = new HashMap<String, InputStream>();
 		try {
 			final URL wsdlURL = getURL(baseURL, wsdlLocation);
@@ -94,19 +93,21 @@ public class WSDLLoader {
 			}
 
 			// wsdl:import
-			final NodeList imports = wsdlDocument.getElementsByTagNameNS(
-					WSDL_NS, "import");
-			processedWSDLLocations.add(wsdlLocation);
+			final NodeList imports = wsdlDocument.getElementsByTagNameNS(WSDL_NS, "import");
 			for(int index = 0; index < imports.getLength(); ++index) {
 				Element wsdlImport = (Element)imports.item(index);
 				String location = wsdlImport.getAttribute("location");
-				if (processedWSDLLocations.contains(location)) {
+				String fileName = processedWSDLLocations.get(location);
+				if (fileName != null) {
+					wsdlImport.setAttribute("location", fileName);
 					continue;
 				}
-				String filename = String.format(filenameTemplate, filenameIndex++);
-				Map<String, InputStream> importedWsdls = new WSDLLoader().load(wsdlURL, location, filenameTemplate, processedWSDLLocations);
-				wsdlImport.setAttribute("location", filename);
-				wsdls.put(filename, importedWsdls.remove(DEFAULT_FILENAME));
+				fileName = String.format(filenameTemplate, filenameIndex++);
+				processedWSDLLocations.put(location, fileName);
+				Map<String, InputStream> importedWsdls = new WSDLLoader().load(
+						wsdlURL, location, filenameTemplate, processedWSDLLocations);
+				wsdlImport.setAttribute("location", fileName);
+				wsdls.put(fileName, importedWsdls.remove(DEFAULT_FILENAME));
 				wsdls.putAll(importedWsdls);
 			}
 
@@ -186,7 +187,8 @@ public class WSDLLoader {
 							} else {
 								// schema already exist
 								if (importedSchemas.get(schemaNS).add(schemaURL)) {
-									NodeList nl = ((Element) ownerSchemaNode.getParentNode()).getElementsByTagNameNS(XSD_NS, NAME_ELEMENT_SCHEMA);
+									NodeList nl = ((Element) ownerSchemaNode.getParentNode()).getElementsByTagNameNS(
+											XSD_NS, NAME_ELEMENT_SCHEMA);
 									for (int i = 0; i < nl.getLength(); ++i) {
 										Element schema = (Element) nl.item(i);
 										if (schemaNS.equals(schema.getAttribute(NAME_ATTRIBUTE_TARGET_NAMESPACE))) {
@@ -394,7 +396,8 @@ public class WSDLLoader {
 		}
 	}
 
-	private static final Element loadSchema(URL schemaFile, boolean cleanup) throws IOException, SAXException, ParserConfigurationException {
+	private static final Element loadSchema(URL schemaFile, boolean cleanup)
+			throws IOException, SAXException, ParserConfigurationException {
 		InputStream is = null;
 		try {
 			is = schemaFile.openStream();
