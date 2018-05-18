@@ -99,7 +99,7 @@ public class WSDLLoader {
 			processedWSDLLocations.add(wsdlLocation);
 			for(int index = 0; index < imports.getLength(); ++index) {
 				Element wsdlImport = (Element)imports.item(index);
-				String location = wsdlImport.getAttribute("locations");
+				String location = wsdlImport.getAttribute("location");
 				if (processedWSDLLocations.contains(location)) {
 					continue;
 				}
