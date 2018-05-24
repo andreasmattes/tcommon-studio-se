@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.emf.common.util.EList;
+import org.eclipse.gef.commands.Command;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -60,6 +61,7 @@ import org.talend.core.model.process.IContextParameter;
 import org.talend.core.model.properties.ContextItem;
 import org.talend.core.model.properties.Project;
 import org.talend.core.ui.context.cmd.AddRepositoryContextGroupCommand;
+import org.talend.core.ui.editor.command.ContextRemoveParameterCommand;
 import org.talend.core.ui.i18n.Messages;
 import org.talend.designer.core.model.utils.emf.talendfile.ContextParameterType;
 import org.talend.designer.core.model.utils.emf.talendfile.ContextType;
@@ -318,7 +320,7 @@ public class SelectRepositoryContextDialog extends SelectionDialog {
             ContextParameterType param = (ContextParameterType) obj;
             treeViewer.setGrayed(param, false);
             if (helper.existParameterForJob(param)) {
-                treeViewer.setChecked(param, true); // checked always
+                treeViewer.setChecked(param, checked); // checked always
             } else {
                 ContextParameterType existedParam = hasSelectedParam(param);
                 if (existedParam != null && selectedContextName != null) {
@@ -475,16 +477,7 @@ public class SelectRepositoryContextDialog extends SelectionDialog {
                 // modelManager,
                 // helper, paramTypeList);
 
-                if (modelManager.getCommandStack() != null) {
-
-                    modelManager.getCommandStack().execute(addGroupCmd);
-
-                    // modelManager.getCommandStack().execute(addVarCmd);
-
-                } else {
-                    addGroupCmd.execute();
-                    // addVarCmd.execute();
-                }
+                execCommand(addGroupCmd);
 
                 monitor.done();
 
@@ -497,6 +490,14 @@ public class SelectRepositoryContextDialog extends SelectionDialog {
             MessageBoxExceptionHandler.process(e.getTargetException(), getParentShell());
         } catch (InterruptedException e) {
             // Nothing to do
+        }
+    }
+
+    private void execCommand(Command cmd) {
+        if (modelManager.getCommandStack() != null) {
+            modelManager.getCommandStack().execute(cmd);
+        } else {
+            cmd.execute();
         }
     }
 
@@ -514,8 +515,20 @@ public class SelectRepositoryContextDialog extends SelectionDialog {
             }
             progressDialog(selectedItems, contextGoupNameSet, getSelectedContextParameterType());
 
-            modelManager.refresh();
+        } else {
+            IContext defaultContext = manager.getDefaultContext();
+            List<IContextParameter> existParas = new ArrayList<>(defaultContext.getContextParameterList());
+            // remove the params which is unchecked
+            for (IContextParameter param : existParas) {
+                if (param.isBuiltIn()) {
+                    continue;
+                }
+                ContextRemoveParameterCommand cmd = new ContextRemoveParameterCommand(manager, param.getName(), param.getSource());
+                execCommand(cmd);
+            }
         }
+
+        modelManager.refresh();
 
         super.okPressed();
 

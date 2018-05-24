@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -56,12 +56,14 @@ public interface ILibrariesService extends IService {
     public List<URL> getTalendRoutines();
 
     public String getPerlLibrariesPath();
-    
+
     public void deployLibrary(URL source, boolean reset) throws IOException;
 
     public void deployLibrary(URL source) throws IOException;
-    
+
     public void deployLibrary(URL source, String mavenUri) throws IOException;
+
+    public void deployLibrary(URL source, String mavenUri, boolean refresh) throws IOException;
 
     public void deployLibrarys(URL[] source) throws IOException;
 
@@ -104,7 +106,7 @@ public interface ILibrariesService extends IService {
     Set<ModuleNeeded> getCodesModuleNeededs(ERepositoryObjectType type);
 
     List<ModuleNeeded> getModuleNeeded(String id, boolean isGroup);
-    
+
     public void deployProjectLibrary(File source) throws IOException;
 
     public boolean isMavenArtifactAvailable(String mvnUri);

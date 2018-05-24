@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -99,8 +99,8 @@ import org.talend.cwm.helper.ConnectionHelper;
  */
 public class RepositoryToComponentProperty {
 
-    public static Object getValue(Connection connection, String value, IMetadataTable table, String targetComponent) {
-
+    public static Object getValue(Connection connection, String value, IMetadataTable table, String targetComponent, Map<Object, Object> contextMap) {
+        
         if (connection instanceof HL7Connection) {
             return getHL7Value((HL7Connection) connection, value);
         }
@@ -154,7 +154,7 @@ public class RepositoryToComponentProperty {
 
         for (IDragAndDropServiceHandler handler : DragAndDropManager.getHandlers()) {
             if (handler.canHandle(connection)) {
-                return handler.getComponentValue(connection, value, table, targetComponent);
+                return handler.getComponentValue(connection, value, table, targetComponent, contextMap);
             }
         }
         return null;
@@ -162,7 +162,7 @@ public class RepositoryToComponentProperty {
     }
 
     public static Object getValue(Connection connection, String value, IMetadataTable table) {
-        return getValue(connection, value, table, null);
+        return getValue(connection, value, table, null, null);
     }
 
     /**
@@ -992,7 +992,8 @@ public class RepositoryToComponentProperty {
                         || EDatabaseConnTemplate.ORACLESN.getDBDisplayName().equals(databaseType)
                         || EDatabaseConnTemplate.PLUSPSQL.getDBDisplayName().equals(databaseType)
                         || EDatabaseConnTemplate.PSQL.getDBDisplayName().equals(databaseType)
-                        || EDatabaseConnTemplate.SAPHana.getDBDisplayName().equals(databaseType)) {
+                        || EDatabaseConnTemplate.SAPHana.getDBDisplayName().equals(databaseType)
+                        || EDatabaseConnTemplate.MSSQL.getDBDisplayName().equals(databaseType)) {
                     if (dbVersionString != null) {
                         driverValue = dbVersionString.toUpperCase();
                     }

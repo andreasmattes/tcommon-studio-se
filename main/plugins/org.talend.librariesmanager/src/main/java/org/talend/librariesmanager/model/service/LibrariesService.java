@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -47,10 +47,10 @@ public class LibrariesService implements ILibrariesService {
     private ILibrariesService getLibrariesService() {
         return javaService;
     }
-    
+
     @Override
     public void deployLibrary(URL source, boolean reset) throws IOException {
-        this.getLibrariesService().deployLibrary(source, reset);      
+        this.getLibrariesService().deployLibrary(source, reset);
     }
 
     @Override
@@ -238,10 +238,10 @@ public class LibrariesService implements ILibrariesService {
     public List<ModuleNeeded> getModuleNeeded(String id, boolean isGroup) {
         return getLibrariesService().getModuleNeeded(id, isGroup);
     }
-    
+
     @Override
-    public void deployProjectLibrary(File source) throws IOException{
-       this.getLibrariesService().deployProjectLibrary(source);
+    public void deployProjectLibrary(File source) throws IOException {
+        this.getLibrariesService().deployProjectLibrary(source);
     }
 
     @Override
@@ -252,6 +252,11 @@ public class LibrariesService implements ILibrariesService {
     @Override
     public void deployLibrary(URL source, String mavenUri) throws IOException {
         getLibrariesService().deployLibrary(source, mavenUri);
+    }
+
+    @Override
+    public void deployLibrary(URL source, String mavenUri, boolean refresh) throws IOException {
+        getLibrariesService().deployLibrary(source, mavenUri, refresh);
     }
 
 }

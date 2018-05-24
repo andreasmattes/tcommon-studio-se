@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -551,8 +552,8 @@ public class TreeUtil {
         return getFoxTreeNodesForXmlMap(filePath, absoluteXPathQuery, false);
     }
 
-    private static void getFoxTreeNodesForXmlMap(String filePath, List<FOXTreeNode> list) throws OdaException,
-            URISyntaxException, IOException {
+    private static void getFoxTreeNodesForXmlMap(String filePath, List<FOXTreeNode> list)
+            throws OdaException, URISyntaxException, IOException {
         ATreeNode treeNode = SchemaPopulationUtil.getSchemaTree(filePath, true, 0);
         FOXTreeNode root = cloneATreeNode(treeNode, XmlUtil.isXSDFile(filePath));
         if (root instanceof Element) {
@@ -861,7 +862,8 @@ public class TreeUtil {
         return path;
     }
 
-    private static XSDSchema getSchemaFromZip(XSDPopulationUtil2 popUtil, String fileName) throws IOException, URISyntaxException {
+    private static XSDSchema getSchemaFromZip(XSDPopulationUtil2 popUtil, String fileName)
+            throws IOException, URISyntaxException {
         IPath path = getTempPath();
         path = path.append("unzip_" + new Path(fileName).lastSegment());
         String unzipPath = path.toPortableString();
@@ -895,9 +897,8 @@ public class TreeUtil {
 
     public static FOXTreeNode cloneATreeNode(ATreeNode aNode, boolean isXsd) {
         List<ATreeNode> aNodes = NodeCreationObserver.getList();
-        FOXTreeNode rootFNode = null;
-        for (int i= 0; i< aNodes.size(); i++) {
-            ATreeNode treeNode = aNodes.get(i);
+        Map<ATreeNode, FOXTreeNode> mapOldToNewNode = new HashMap<>();
+        for (ATreeNode treeNode : aNodes) {
             if (isXsd && treeNode.getValue() instanceof String) {
                 String currentPath = treeNode.getValue() + "[" + treeNode.getDataType() + "]";
                 if (treeNode.getParent() != null) {
@@ -938,21 +939,19 @@ public class TreeUtil {
             }
             node.setDataMaxLength(treeNode.getDataMaxLength());
             node.setPrecisionValue(treeNode.getPrecisionValue());
-            if (treeNode.getFoxTreeNode() == null) {
-                treeNode.setFoxTreeNode(node);
-            }
-            if (treeNode.getParent() != null && treeNode.getParent().getFoxTreeNode() != null) {
-                ((FOXTreeNode) treeNode.getParent().getFoxTreeNode()).addChild(node);
-            } 
+            mapOldToNewNode.put(treeNode, node);
         }
-        for (ATreeNode treeNode: aNodes) {
-            FOXTreeNode fNode = (FOXTreeNode) treeNode.getFoxTreeNode();
-            if ( treeNode.getParent() != null && fNode.getParent() == null) {
-                ((FOXTreeNode) treeNode.getParent().getFoxTreeNode()).addChild(fNode);
+        for (ATreeNode treeNode : aNodes) {
+            FOXTreeNode current = mapOldToNewNode.get(treeNode);
+            for (Object childObject : treeNode.getChildren()) {
+                ATreeNode childNode = (ATreeNode) childObject;
+                current.addChild(mapOldToNewNode.get(childNode));
             }
         }
-        rootFNode = (FOXTreeNode) aNode.getFoxTreeNode();
-        return rootFNode;
+        FOXTreeNode foxNode = mapOldToNewNode.get(aNode);
+        mapOldToNewNode.clear();
+        mapOldToNewNode = null;
+        return foxNode;
     }
 
     public static FOXTreeNode getRootFOXTreeNode(FOXTreeNode node) {

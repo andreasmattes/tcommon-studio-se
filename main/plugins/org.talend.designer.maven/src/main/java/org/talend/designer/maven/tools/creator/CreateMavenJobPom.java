@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -207,9 +207,9 @@ public class CreateMavenJobPom extends AbstractMavenProcessorPom {
                 isOptionChecked(TalendProcessArgumentConstant.ARG_ENABLE_STATS));
 
         checkPomProperty(properties, "talend.project.name", ETalendMavenVariables.ProjectName,
-                jobInfoProp.getProperty(JobInfoProperties.PROJECT_NAME, project.getTechnicalLabel()));
+                project.getTechnicalLabel());
         checkPomProperty(properties, "talend.project.name.lowercase", ETalendMavenVariables.ProjectName,
-                jobInfoProp.getProperty(JobInfoProperties.PROJECT_NAME, project.getTechnicalLabel()).toLowerCase());
+                project.getTechnicalLabel().toLowerCase());
         checkPomProperty(properties, "talend.project.id", ETalendMavenVariables.ProjectId,
                 jobInfoProp.getProperty(JobInfoProperties.PROJECT_ID, String.valueOf(project.getId())));
         checkPomProperty(properties, "talend.project.branch", ETalendMavenVariables.ProjectBranch,

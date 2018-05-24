@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -97,17 +97,17 @@ public abstract class AbstractLibrariesService implements ILibrariesService {
     public void deployLibrary(URL source) throws IOException {
         deployLibrary(source, null, true);
     }
-    
+
     @Override
     public void deployLibrary(URL source, String mavenUri) throws IOException {
         deployLibrary(source, mavenUri, true);
     }
-    
+
     public void deployLibrary(URL source, boolean reset) throws IOException {
         deployLibrary(source, null, reset);
     }
 
-    private void deployLibrary(URL source, String mavenUri, boolean reset) throws IOException {
+    public void deployLibrary(URL source, String mavenUri, boolean reset) throws IOException {
 
         // fix for bug 0020953
         // if jdk is not 1.5, need decode %20 for space.
@@ -120,8 +120,8 @@ public abstract class AbstractLibrariesService implements ILibrariesService {
         }
 
         final File sourceFile = new File(decode);
-        final File targetFile = new File(
-                LibrariesManagerUtils.getLibrariesPath(ECodeLanguage.JAVA) + File.separatorChar + sourceFile.getName());
+        final File targetFile = new File(LibrariesManagerUtils.getLibrariesPath(ECodeLanguage.JAVA) + File.separatorChar
+                + sourceFile.getName());
 
         if (!repositoryBundleService.contains(source.getFile())) {
             repositoryBundleService.deploy(sourceFile.toURI(), mavenUri);
@@ -341,12 +341,12 @@ public abstract class AbstractLibrariesService implements ILibrariesService {
     public List<ModuleNeeded> getModuleNeeded(String id, boolean isGroup) {
         return ExtensionModuleManager.getInstance().getModuleNeeded(id, isGroup);
     }
-    
+
     @Override
     public void deployProjectLibrary(File source) throws IOException {
         if (GlobalServiceRegister.getDefault().isServiceRegistered(ILibraryManagerService.class)) {
-            ILibraryManagerService librairesService = (ILibraryManagerService) GlobalServiceRegister.getDefault()
-                    .getService(ILibraryManagerService.class);
+            ILibraryManagerService librairesService = (ILibraryManagerService) GlobalServiceRegister.getDefault().getService(
+                    ILibraryManagerService.class);
             if (librairesService != null) {
                 File sourceFile = new File(librairesService.getJarPath(source.getName()));
                 if (sourceFile.exists()) {
@@ -366,5 +366,5 @@ public abstract class AbstractLibrariesService implements ILibrariesService {
     public boolean isMavenArtifactAvailable(String mvnUri) {
         return PomUtil.isAvailable(mvnUri);
     }
-    
+
 }

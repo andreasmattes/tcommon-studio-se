@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -56,21 +56,20 @@ public enum EDatabaseConnTemplate {
             "jdbc:oracle:thin:@<host>:<port>:<sid>", //$NON-NLS-1$
             "1521")), //$NON-NLS-1$
 
-    ORACLESN(
-             new DbConnStr(
-                     EDatabaseTypeName.ORACLESN, //
-                     "jdbc:oracle:thin:@(description=(address=(protocol=tcp)(host=<host>)(port=<port>))(connect_data=(service_name=<service_name>)))", //$NON-NLS-1$
-                     "1521")), //$NON-NLS-1$
+    ORACLESN(new DbConnStr(
+            EDatabaseTypeName.ORACLESN, //
+            "jdbc:oracle:thin:@(description=(address=(protocol=tcp)(host=<host>)(port=<port>))(connect_data=(service_name=<service_name>)))", //$NON-NLS-1$
+            "1521")), //$NON-NLS-1$
 
     ORACLE_CUSTOM(new DbConnStr(EDatabaseTypeName.ORACLE_CUSTOM, //
             "<host>")), //$NON-NLS-1$  
 
     ORACLE_OCI(new DbConnStr(EDatabaseTypeName.ORACLE_OCI, //
             "jdbc:oracle:oci8:@<service_name>")), //$NON-NLS-1$    
-    
+
     MSSQL(new DbConnStrForMSSQL(EDatabaseTypeName.MSSQL, "jdbc:jtds:sqlserver://<host>:<port>/<sid>;<property>", //$NON-NLS-1$
             "1433", new EDatabaseVersion4Drivers[] { EDatabaseVersion4Drivers.MSSQL, EDatabaseVersion4Drivers.MSSQL_2012,
-                    EDatabaseVersion4Drivers.MSSQL_PROP})),
+                    EDatabaseVersion4Drivers.MSSQL_PROP })),
     MSSQL05_08(new DbConnStr(EDatabaseTypeName.MSSQL05_08, //
             "jdbc:sqlserver://<host>:<port>;DatabaseName=<sid>", //$NON-NLS-1$
             "1433")), //$NON-NLS-1$         
@@ -176,7 +175,7 @@ public enum EDatabaseConnTemplate {
             "5480")), //$NON-NLS-1$
 
     VERTICA(new DbConnStr(EDatabaseTypeName.VERTICA, //
-            "jdbc:vertica://<host>:<port>/<sid>", //$NON-NLS-1$
+            "jdbc:vertica://<host>:<port>/<sid>?<property>", //$NON-NLS-1$
             "5433")), //$NON-NLS-1$
 
     GENERAL_JDBC(new DbConnStrForGeneralJDBC(EDatabaseTypeName.GENERAL_JDBC, //
@@ -239,7 +238,7 @@ public enum EDatabaseConnTemplate {
     public String getDefaultServer(EDatabaseVersion4Drivers version) {
         return this.connStr.getDefaultServer(version);
     }
-    
+
     public String getDefaultDB(EDatabaseVersion4Drivers version) {
         return this.connStr.getDefaultDB(version);
     }

@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -947,35 +947,82 @@ public class NodeUtil {
         if (original == null || original.trim().length() == 0) {
             return original;
         }
-        String result = "";
+        StringBuilder result = new StringBuilder();
         int leftQuotes = original.indexOf("\"");
         int rightQuotes = original.indexOf("\"", leftQuotes + 1);
-        int fakeRightQuotes = original.indexOf("\\\"", leftQuotes + 1);
+        int fakeRightQuotes = getFakeRightQuotes( original,leftQuotes);
         while (rightQuotes == fakeRightQuotes + 1) {
             rightQuotes = original.indexOf("\"", rightQuotes + 1);
-            fakeRightQuotes = original.indexOf("\\\"", fakeRightQuotes + 1);
+            fakeRightQuotes = getFakeRightQuotes( original,fakeRightQuotes);
         }
         int leftPrev = 0;
-        while (leftQuotes >= 0 && rightQuotes > leftQuotes) {
-            if (leftQuotes > leftPrev) {
-                result += original.substring(leftPrev, leftQuotes);
-            }
-            // System.out.println("leftQuote="+leftQuotes + ", rightQuote="+rightQuotes);
-            if (leftQuotes < rightQuotes) {
-                result += original.substring(leftQuotes, rightQuotes + 1).replace("\r", "").replace("\n", "\\n");
-            }
+		while (leftQuotes >= 0 && rightQuotes > leftQuotes) {
+			if (leftQuotes > leftPrev) {//Outside of double quote
+				result.append(original.substring(leftPrev, leftQuotes));
+
+			}
+			if (leftQuotes < rightQuotes) {//Inside of double quote
+				//split string for better appearance and avoid compile error when string exceed 64k
+				int current = leftQuotes;
+				int Offset = 120;
+				int count = 0;
+				while (rightQuotes + 1 - current > 120) {
+					while (original.charAt(current + Offset - 1) == '\\') {//avoid split special character e.g. \"
+						Offset--;
+					}
+					
+					if(count>500){//This is the code that really solve TDI-39968 others are only for good appearance.
+						result.append(original.substring(current, current + Offset).replace("\r", "").replace("\n", "\\n")).append("\" + new String()\n+\"");
+						count = 0;
+					}else{
+						result.append(original.substring(current, current + Offset).replace("\r", "").replace("\n", "\\n")).append("\"\n+\"");
+					}
+					current += Offset;
+					Offset = 120;
+					count++;
+				}
+				result.append(original.substring(current, rightQuotes + 1).replace("\r", "").replace("\n", "\\n"));
+			}
 
             leftQuotes = original.indexOf("\"", rightQuotes + 1);
             leftPrev = rightQuotes + 1;
             rightQuotes = original.indexOf("\"", leftQuotes + 1);
-            fakeRightQuotes = original.indexOf("\\\"", leftQuotes + 1);
+            fakeRightQuotes = getFakeRightQuotes( original,leftQuotes);
             while (rightQuotes == fakeRightQuotes + 1) {
                 rightQuotes = original.indexOf("\"", rightQuotes + 1);
-                fakeRightQuotes = original.indexOf("\\\"", fakeRightQuotes + 1);
+                fakeRightQuotes = getFakeRightQuotes( original,fakeRightQuotes);
             }
         }
-        result += original.substring(leftPrev);
-        return result;
+        result.append( original.substring(leftPrev));
+        return result.toString();
+    }
+    
+    /**
+     * This method would avoid get wrong fakeRithQuotes index, like:
+     * "\"\\\\\"" the right quote is not fake one.
+     */
+    private static int getFakeRightQuotes(String original, int fromIdex) {
+        int fakeRightQuotes = original.indexOf("\\\"", fromIdex + 1);
+        String quoteStr = "\\\"";
+        int count = 0;
+        while (fakeRightQuotes > 0) {
+            count++;
+            quoteStr = "\\" + quoteStr;
+            int tmpIndex = original.indexOf(quoteStr, fromIdex + 1);
+            if (tmpIndex > fakeRightQuotes || tmpIndex < 0) {
+                // If add even times "\\", then the index is -1 or bigger than we get fakeRightQuotes
+                // This means that this is really fake quote
+                if (count % 2 == 1) {
+                    break;
+                } else {// Else it is really a right quote, then need get and check next fakeRightQuotes
+                    fakeRightQuotes = original.indexOf("\\\"", fakeRightQuotes + 1);
+                    quoteStr = "\\\"";
+                    count = 0;
+                }
+            }
+
+        }
+        return fakeRightQuotes;
     }
 
     /**

@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -207,6 +207,38 @@ public class MavenUrlHelper {
         }
 
         return mvnUrl.toString();
+    }
+
+    public static String getArtifactPath(MavenArtifact artifact) {
+        StringBuffer buffer = new StringBuffer();
+        buffer.append(artifact.getGroupId().replaceAll("\\.", "/"));
+
+        buffer.append("/");
+        buffer.append(artifact.getArtifactId());
+
+        if (artifact.getVersion() != null) {
+            buffer.append("/");
+            buffer.append(artifact.getVersion());
+        }
+
+        buffer.append("/");
+        buffer.append(artifact.getArtifactId());
+        if (artifact.getVersion() != null) {
+            buffer.append("-");
+            buffer.append(artifact.getVersion());
+        }
+        if (artifact.getClassifier() != null) {
+            buffer.append("-");
+            buffer.append(artifact.getClassifier());
+        }
+        if (artifact.getType() != null) {
+            buffer.append(".");
+            buffer.append(artifact.getType());
+        } else {
+            // add default extension
+            buffer.append(".jar");
+        }
+        return buffer.toString();
     }
 
 }

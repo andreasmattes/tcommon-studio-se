@@ -1,6 +1,6 @@
 // ============================================================================
 //
-// Copyright (C) 2006-2016 Talend Inc. - www.talend.com
+// Copyright (C) 2006-2018 Talend Inc. - www.talend.com
 //
 // This source code is available under agreement available at
 // %InstallDIR%\features\org.talend.rcp.branding.%PRODUCTNAME%\%PRODUCTNAME%license.txt
@@ -183,4 +183,7 @@ public interface IDesignerCoreService extends IService {
     public Reader getJavadocContentAccessContentReader(IMember member) throws JavaModelException;
 
     public int getTACConnectionTimeout();
+
+    public void setTACConnectionTimeout(int timeout);
+
 }
