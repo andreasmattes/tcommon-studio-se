@@ -23,6 +23,8 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -70,15 +72,22 @@ public class WSDLLoader {
 
 	public Map<String, InputStream> load(String wsdlLocation, String filenameTemplate) throws InvocationTargetException {
 		filenameIndex = 0;
-		return load(null, wsdlLocation, filenameTemplate, new HashMap<String, String>());
+		return load(null, wsdlLocation, filenameTemplate, new LinkedList<String>());
 	}
 
 	private Map<String, InputStream> load(URL baseURL, String wsdlLocation, String filenameTemplate,
-			Map<String, String> processedWSDLLocations) throws InvocationTargetException {
+			List<String> processedDefinitions) throws InvocationTargetException {
 		Map<String, InputStream> wsdls = new HashMap<String, InputStream>();
 		try {
 			final URL wsdlURL = getURL(baseURL, wsdlLocation);
-			final Document wsdlDocument = getDocumentBuilder().parse(wsdlURL.toExternalForm());
+			final String absoluteWsdlLocation = wsdlURL.toExternalForm();
+			final Document wsdlDocument = getDocumentBuilder().parse(absoluteWsdlLocation);
+			final String targetNamespace = wsdlDocument.getDocumentElement().getAttribute("targetNamespace");
+			if (targetNamespace == null || targetNamespace.length() == 0) {
+				throw new IllegalStateException("WSDL definitions found without target namespace. ");
+			}
+			final String definitionKey = targetNamespace + " " + absoluteWsdlLocation;
+			processedDefinitions.add(definitionKey);
 
 			final NodeList schemas = wsdlDocument.getElementsByTagNameNS(
 					XSD_NS, NAME_ELEMENT_SCHEMA);
@@ -96,16 +105,19 @@ public class WSDLLoader {
 			final NodeList imports = wsdlDocument.getElementsByTagNameNS(WSDL_NS, "import");
 			for(int index = 0; index < imports.getLength(); ++index) {
 				Element wsdlImport = (Element)imports.item(index);
+				String namespace = wsdlImport.getAttribute("namespace");
 				String location = wsdlImport.getAttribute("location");
-				String fileName = processedWSDLLocations.get(location);
-				if (fileName != null) {
-					wsdlImport.setAttribute("location", fileName);
+				String absoluteLocation = getURL(baseURL, location).toExternalForm();
+				String importKey = namespace + " " + absoluteLocation;
+				if (processedDefinitions.contains(importKey)) {
+					// "wsdl4j" does not handle circular dependencies properly;
+					// therefore, remove circular imports.
+					wsdlImport.getParentNode().removeChild(wsdlImport);
 					continue;
 				}
-				fileName = String.format(filenameTemplate, filenameIndex++);
-				processedWSDLLocations.put(location, fileName);
+				String fileName = String.format(filenameTemplate, filenameIndex++);
 				Map<String, InputStream> importedWsdls = new WSDLLoader().load(
-						wsdlURL, location, filenameTemplate, processedWSDLLocations);
+						wsdlURL, location, filenameTemplate, processedDefinitions);
 				wsdlImport.setAttribute("location", fileName);
 				wsdls.put(fileName, importedWsdls.remove(DEFAULT_FILENAME));
 				wsdls.putAll(importedWsdls);
