@@ -167,8 +167,8 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
                 }
                 node.setValue(elementName);
                 if (xsdTypeDefinition == null) {
-                    XSDComplexTypeDefinition generalType = xsdSchema.resolveComplexTypeDefinitionURI(xsdElementDeclaration
-                            .getURI());
+                    XSDComplexTypeDefinition generalType = xsdSchema
+                            .resolveComplexTypeDefinitionURI(xsdElementDeclaration.getURI());
                     if (generalType.getContainer() != null) {
                         xsdTypeDefinition = generalType;
                     }
@@ -211,6 +211,17 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
         return null;
     }
 
+    private List<ATreeNode> getParentList(ATreeNode current) {
+        List<ATreeNode> nodes = new ArrayList<>();
+        if (current.getParent() != null) {
+            nodes.add(current.getParent());
+            if (current.getParent().getParent() != null) {
+                nodes.addAll(getParentList(current.getParent()));
+            }
+        }
+        return nodes;
+    }
+
     private void addParticleDetail(XSDSchema xsdSchema, XSDParticle xsdParticle, ATreeNode parentNode, String currentPath)
             throws OdaException, IllegalAccessException, InvocationTargetException {
         XSDTerm xsdTerm = xsdParticle.getTerm();
@@ -225,7 +236,13 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
                 partNode.setValue(originalTreeNode.getValue());
                 partNode.setType(ATreeNode.ELEMENT_TYPE);
                 partNode.setDataType(originalTreeNode.getDataType());
-                partNode.addChild(originalTreeNode.getChildren());
+                List<ATreeNode> parentList = getParentList(parentNode);
+                boolean hasLoop = parentList.contains(originalTreeNode);
+                if (!hasLoop) {
+                    partNode.addChild(originalTreeNode.getChildren());
+                }
+                // if there is loop like elementA--> elementB --> elementA , we only show the root node of A the second
+                // time
                 parentNode.addChild(partNode);
                 return;
             }
@@ -240,8 +257,8 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
                 if (schemaFromNamespace == null) {
                     schemaFromNamespace = xsdSchema;
                 }
-                xsdElementDeclarationParticle = schemaFromNamespace.resolveElementDeclarationURI(xsdElementDeclarationParticle
-                        .getURI());
+                xsdElementDeclarationParticle = schemaFromNamespace
+                        .resolveElementDeclarationURI(xsdElementDeclarationParticle.getURI());
                 typeDef = xsdElementDeclarationParticle.getTypeDefinition();
             }
             String typeNamespace = typeDef.getTargetNamespace();
@@ -257,8 +274,9 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
             if (namespace != null) {
                 prefix = namespaceToPrefix.get(namespace);
                 if (prefix == null) {
-                    prefix = ((XSDElementDeclaration) xsdTerm).getQName().contains(":") ? ((XSDElementDeclaration) xsdTerm)
-                            .getQName().split(":")[0] : "";
+                    prefix = ((XSDElementDeclaration) xsdTerm).getQName().contains(":")
+                            ? ((XSDElementDeclaration) xsdTerm).getQName().split(":")[0]
+                            : "";
 
                     if (isEnableGeneratePrefix() && (prefix == null || prefix.isEmpty())) {
                         // generate a new prefix
@@ -280,7 +298,8 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
                             for (Object child : node.getChildren()) {
                                 if (child instanceof ATreeNode) {
                                     ATreeNode childNode = (ATreeNode) child;
-                                    if (childNode.getType() == ATreeNode.NAMESPACE_TYPE && namespace.equals(childNode.getValue())) {
+                                    if (childNode.getType() == ATreeNode.NAMESPACE_TYPE
+                                            && namespace.equals(childNode.getValue())) {
                                         namespaceFoundInParent = true;
                                         break;
                                     }
@@ -337,8 +356,9 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
             }
             if (!resolvedAsComplex) {
                 String dataType = xsdElementDeclarationParticle.getTypeDefinition().getQName();
-                if (!XSDConstants.isSchemaForSchemaNamespace(xsdElementDeclarationParticle.getTypeDefinition()
-                        .getTargetNamespace()) && xsdElementDeclarationParticle.getTypeDefinition().getBaseType() != null) {
+                if (!XSDConstants
+                        .isSchemaForSchemaNamespace(xsdElementDeclarationParticle.getTypeDefinition().getTargetNamespace())
+                        && xsdElementDeclarationParticle.getTypeDefinition().getBaseType() != null) {
                     if (!"xs:anySimpleType".equals(xsdElementDeclarationParticle.getTypeDefinition().getBaseType().getQName())) {
                         dataType = xsdElementDeclarationParticle.getTypeDefinition().getBaseType().getQName();
                     }
@@ -384,7 +404,8 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
         return getSchemaTree(xsdSchema, selectedNode, true, false, false);
     }
 
-    public ATreeNode getSchemaTree(XSDSchema xsdSchema, ATreeNode selectedNode, boolean supportChoice, boolean supportSubstitution) {
+    public ATreeNode getSchemaTree(XSDSchema xsdSchema, ATreeNode selectedNode, boolean supportChoice,
+            boolean supportSubstitution) {
         return getSchemaTree(xsdSchema, selectedNode, true, supportChoice, supportSubstitution);
     }
 
@@ -453,8 +474,8 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
 
                 XSDTypeDefinition xsdTypeDefinition = xsdElementDeclaration.getTypeDefinition();
                 if (xsdTypeDefinition == null) {
-                    XSDComplexTypeDefinition generalType = xsdSchema.resolveComplexTypeDefinitionURI(xsdElementDeclaration
-                            .getURI());
+                    XSDComplexTypeDefinition generalType = xsdSchema
+                            .resolveComplexTypeDefinitionURI(xsdElementDeclaration.getURI());
                     if (generalType.getContainer() != null) {
                         xsdTypeDefinition = generalType;
                     }
@@ -560,6 +581,12 @@ public class XSDPopulationUtil2 implements IXSDPopulationUtil {
                 rootSubsNode = parentNode;
             }
             ATreeNode node = new ATreeNode();
+            // set parent here for getParentList check for loop latter
+            if (supportSubstitution) {
+                node.setParent(parentNode);
+            } else {
+                node.setParent(rootSubsNode.getParent());
+            }
             String prefix = null;
             String namespace = xsdElementDeclaration.getTargetNamespace();
             node.setCurrentNamespace(namespace);

@@ -125,6 +125,11 @@ public class ModulesNeededProvider {
     private static final List<IChangedLibrariesListener> listeners = new ArrayList<IChangedLibrariesListener>();
 
     private static IRepositoryService service = null;
+
+    private static List<ModuleNeeded> importNeedsListForRoutes;
+
+    private static List<ModuleNeeded> importNeedsListForBeans;
+
     static {
         if (GlobalServiceRegister.getDefault().isServiceRegistered(IRepositoryService.class)) {
             service = (IRepositoryService) GlobalServiceRegister.getDefault().getService(IRepositoryService.class);
@@ -277,13 +282,17 @@ public class ModulesNeededProvider {
         getModulesNeeded().removeAll(moduleForCurrentJobList);
         getAllManagedModules().removeAll(moduleForCurrentJobList);
 
-        Set<String> neededLibraries = process.getNeededLibraries(TalendProcessOptionConstants.MODULES_DEFAULT);
+        Set<ModuleNeeded> neededLibraries = process.getNeededModules(TalendProcessOptionConstants.MODULES_DEFAULT);
+
         if (neededLibraries != null) {
-            for (String neededLibrary : neededLibraries) {
+            for (ModuleNeeded neededLibrary : neededLibraries) {
                 boolean alreadyInImports = false;
                 for (ModuleNeeded module : getModulesNeeded()) {
-                    if (module.getModuleName().equals(neededLibrary)) {
-                        alreadyInImports = true;
+                    if (module.getModuleName().equals(neededLibrary.getModuleName())) {
+                        if (StringUtils.equals(module.getMavenUri(), neededLibrary.getMavenUri())) {
+                            alreadyInImports = true;
+                            break;
+                        }
                     }
                 }
                 if (alreadyInImports) {
@@ -291,12 +300,26 @@ public class ModulesNeededProvider {
                 }
 
                 // Step 2: re-add specific modules
-                ModuleNeeded toAdd = new ModuleNeeded("Job " + process.getName(), neededLibrary, //$NON-NLS-1$
-                        "Required for the job " + process.getName() + ".", true); //$NON-NLS-1$ //$NON-NLS-2$
+                ModuleNeeded toAdd = null;
+
+                if (neededLibrary.getMavenUri() != null) {
+                    toAdd = new ModuleNeeded("Job " + process.getName(), "Required for the job " + process.getName() + ".", true,
+                            neededLibrary.getMavenUri());
+
+                    toAdd.setCustomMavenUri(neededLibrary.getMavenUri());
+
+                } else {
+                    toAdd = new ModuleNeeded("Job " + process.getName(), neededLibrary.getModuleName(), //$NON-NLS-1$
+                            "Required for the job " + process.getName() + ".", true); //$NON-NLS-1$ //$NON-NLS-2$
+                }
 
                 getModulesNeeded().add(toAdd);
                 getAllManagedModules().add(toAdd);
             }
+
+            ILibraryManagerService libManagerService = (ILibraryManagerService) GlobalServiceRegister.getDefault()
+                    .getService(ILibraryManagerService.class);
+            libManagerService.saveCustomMavenURIMap();
         }
     }
 
@@ -680,10 +703,14 @@ public class ModulesNeededProvider {
             EList imports = routine.getImports();
             for (Object o : imports) {
                 IMPORTType currentImport = (IMPORTType) o;
+                boolean isRequired = currentImport.isREQUIRED();
                 // FIXME SML i18n
                 ModuleNeeded toAdd = new ModuleNeeded(context, currentImport.getMODULE(), currentImport.getMESSAGE(),
-                        currentImport.isREQUIRED());
+                        isRequired);
                 toAdd.setMavenUri(currentImport.getMVN());
+                if (!isRequired && "BeanItem".equals(routine.eClass().getName())) {
+                	toAdd.getExtraAttributes().put("IS_OSGI_EXCLUDED", Boolean.TRUE);
+                }
                 // toAdd.setStatus(ELibraryInstallStatus.INSTALLED);
                 importNeedsList.add(toAdd);
             }
@@ -728,22 +755,29 @@ public class ModulesNeededProvider {
     }
 
     public static List<ModuleNeeded> getModulesNeededForRoutes() {
-        List<ModuleNeeded> importNeedsList = new ArrayList<ModuleNeeded>();
-        importNeedsList.add(getComponentModuleById("CAMEL", "camel-core"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "camel-spring"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "spring-context"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "spring-beans"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "spring-core"));
-        return importNeedsList;
+        if (importNeedsListForRoutes == null) {
+            importNeedsListForRoutes = new ArrayList<ModuleNeeded>();
+            importNeedsListForRoutes.add(getComponentModuleById("CAMEL", "camel-core"));
+            importNeedsListForRoutes.add(getComponentModuleById("CAMEL", "camel-spring"));
+            importNeedsListForRoutes.add(getComponentModuleById("CAMEL", "spring-context"));
+            importNeedsListForRoutes.add(getComponentModuleById("CAMEL", "spring-beans"));
+            importNeedsListForRoutes.add(getComponentModuleById("CAMEL", "spring-core"));
+        }
+        return importNeedsListForRoutes;
     }
 
     public static List<ModuleNeeded> getModulesNeededForBeans() {
-        List<ModuleNeeded> importNeedsList = getModulesNeededForRoutes();
-        
-        importNeedsList.add(getComponentModuleById("CAMEL", "camel-cxf"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "cxf-core"));
-        importNeedsList.add(getComponentModuleById("CAMEL", "javax.ws.rs-api"));
-        return importNeedsList;
+        if (importNeedsListForBeans == null) {
+
+            importNeedsListForBeans = getModulesNeededForRoutes();
+            importNeedsListForBeans.add(getComponentModuleById("CAMEL", "camel-cxf"));
+            importNeedsListForBeans.add(getComponentModuleById("CAMEL", "cxf-core"));
+            importNeedsListForBeans.add(getComponentModuleById("CAMEL", "javax.ws.rs-api"));
+            for (ModuleNeeded need : importNeedsListForBeans) {
+                need.setRequired(false);
+            }
+        }
+        return importNeedsListForBeans;
     }
 
     private static void getRefRoutines(List<IRepositoryViewObject> routines, Project mainProject, ERepositoryObjectType type) {

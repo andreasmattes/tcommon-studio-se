@@ -257,6 +257,17 @@ public class CreateMavenJobPom extends AbstractMavenProcessorPom {
                 jobInfoProp.getProperty(JobInfoProperties.COMMANDLINE_VERSION, VersionUtils.getVersion()));
         String finalNameStr = JavaResourcesHelper.getJobJarName(property.getLabel(), property.getVersion());
         checkPomProperty(properties, "talend.job.finalName", ETalendMavenVariables.JobFinalName, finalNameStr);
+        
+        if(getJobProcessor() != null) {
+            String[] jvmArgs = getJobProcessor().getJVMArgs();
+            if (jvmArgs != null && jvmArgs.length > 0) {
+                StringBuilder jvmArgsStr = new StringBuilder();
+                for (String arg : jvmArgs) {
+                    jvmArgsStr.append(arg + " ");
+                }
+                checkPomProperty(properties, "talend.job.jvmargs", null, jvmArgsStr.toString());
+            }        	
+        }
     }
 
     private void addScriptAddition(StringBuffer scripts, String value) {

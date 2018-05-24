@@ -123,6 +123,10 @@ public class BuildCacheManager {
         if (cachedBuildType == null || currentBuildType == null) {
             return false;
         }
+        // child job of route
+        if("ROUTE".equalsIgnoreCase(currentBuildType)) {
+        	return false;
+        }
 
         return currentBuildType.equals(cachedBuildType);
     }
@@ -167,23 +171,26 @@ public class BuildCacheManager {
         currentJobmodules.clear();
         subjobProjects.clear();
         subjobMavenProjects.clear();
-
-        // clean joblet cache
-        // currentJobletCache.clear();
-        // currentJobletmodules.clear();
-
         aggregatorPomsHelper = new AggregatorPomsHelper();
+    }
+
+    public void clearCurrentJobletCache() {
+        // clean joblet cache
+        currentJobletCache.clear();
+        currentJobletmodules.clear();
     }
 
     public void performBuildSuccess() {
         jobCache.putAll(currentJobCache);
         jobletCache.putAll(currentJobletCache);
         clearCurrentCache();
+        clearCurrentJobletCache();
     }
 
     public void performBuildFailure() {
         restoreSubjobPoms();
         clearCurrentCache();
+        clearCurrentJobletCache();
     }
 
     public void build(IProgressMonitor monitor, Map<String, Object> argumentsMap) throws Exception {
@@ -210,6 +217,7 @@ public class BuildCacheManager {
 
                 String goal = (String) argumentsMap.get(TalendProcessArgumentConstant.ARG_GOAL);
                 MavenPomCommandLauncher mavenLauncher = new MavenPomCommandLauncher(pomFile, goal);
+                mavenLauncher.setSkipTests(true);
                 mavenLauncher.setArgumentsMap(argumentsMap);
                 mavenLauncher.execute(monitor);
             } finally {
@@ -235,10 +243,10 @@ public class BuildCacheManager {
         return !currentJobmodules.isEmpty() || !currentJobletmodules.isEmpty();
     }
 
-    public void updateCodesLastChangeDate(ERepositoryObjectType codeType, Property property) {
-        Date currentLastChangeDate = getTimestamp(property);
+    public void updateCodesLastChangeDate(ERepositoryObjectType codeType) {
+        Date currentLastChangeDate = new Date();
         Date cacheLastChangeDate = codesLastChangeCache.get(codeType);
-        if (cacheLastChangeDate == null || currentLastChangeDate.compareTo(cacheLastChangeDate) != 0) {
+        if (cacheLastChangeDate == null || currentLastChangeDate.compareTo(cacheLastChangeDate) > 0) {
             codesLastChangeCache.put(codeType, currentLastChangeDate);
         }
     }
@@ -319,7 +327,7 @@ public class BuildCacheManager {
     private String getModulePath(Property property) {
         String modulePath = null;
         IPath basePath = null;
-        IPath jobProjectPath = AggregatorPomsHelper.getJobProjectPath(property, null);
+        IPath jobProjectPath = AggregatorPomsHelper.getItemPomFolder(property).getLocation();
         if (!ProjectManager.getInstance().isInCurrentMainProject(property)) {
             if (GlobalServiceRegister.getDefault().isServiceRegistered(IRepositoryService.class)) {
                 IRepositoryService service = (IRepositoryService) GlobalServiceRegister.getDefault()

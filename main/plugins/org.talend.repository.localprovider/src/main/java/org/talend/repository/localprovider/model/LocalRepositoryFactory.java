@@ -168,6 +168,7 @@ import org.talend.repository.localprovider.exceptions.IncorrectFileException;
 import org.talend.repository.localprovider.i18n.Messages;
 import org.talend.repository.model.IProxyRepositoryFactory;
 import org.talend.repository.model.RepositoryConstants;
+
 import orgomg.cwm.foundation.businessinformation.BusinessinformationPackage;
 
 /**
@@ -597,13 +598,13 @@ public class LocalRepositoryFactory extends AbstractEMFRepositoryFactory impleme
                             toReturn.addAll(getSerializableFromFolder(project, curItem, id, type, allVersion, true, withDeleted,
                                     avoidSaveProject, true));
                         } else if (!(curItem instanceof FolderItem)) {
-                            if (property.eResource() != null) {
+                            if (property.eResource() != null && property.eResource().getResourceSet() != null) {
+                                propertyFounds.add(property.eResource().getURI().lastSegment());
                                 if (id == null || id.equals(property.getId())) {
                                     if (withDeleted || !property.getItem().getState().isDeleted()) {
                                         toReturn.add(new RepositoryObject(property));
                                     }
                                 }
-                                propertyFounds.add(property.eResource().getURI().lastSegment());
                                 property.getItem().setParent(currentFolderItem);
                                 addToHistory(id, type, property.getItem().getState().getPath());
                             } else {
@@ -639,6 +640,9 @@ public class LocalRepositoryFactory extends AbstractEMFRepositoryFactory impleme
                                     // no log anymore here since we add the log.error, it should be enough
                                 }
                                 if (property != null) {
+                                    if (property.eResource() != null && property.eResource().getResourceSet() == null) {
+                                        property = reload(property);
+                                    }
                                     if (property.getItem() == null || property.getItem().getState() == null) {
                                         if (type != null) {
                                             log.error("try to load wrong item:" + property.getLabel() + " / " + type);
