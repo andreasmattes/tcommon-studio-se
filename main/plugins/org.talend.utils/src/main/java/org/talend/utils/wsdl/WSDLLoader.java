@@ -80,12 +80,14 @@ public class WSDLLoader {
 		Map<String, InputStream> wsdls = new HashMap<String, InputStream>();
 		try {
 			final URL wsdlURL = getURL(baseURL, wsdlLocation);
-			final Document wsdlDocument = getDocumentBuilder().parse(wsdlURL.toExternalForm());
+			final String absoluteWsdlLocation = wsdlURL.toExternalForm();
+			final Document wsdlDocument = getDocumentBuilder().parse(absoluteWsdlLocation);
 			final String targetNamespace = wsdlDocument.getDocumentElement().getAttribute("targetNamespace");
 			if (targetNamespace == null || targetNamespace.length() == 0) {
 				throw new IllegalStateException("WSDL definitions found without target namespace. ");
 			}
-			processedDefinitions.add(targetNamespace);
+			final String definitionKey = targetNamespace + " " + absoluteWsdlLocation;
+			processedDefinitions.add(definitionKey);
 
 			final NodeList schemas = wsdlDocument.getElementsByTagNameNS(
 					XSD_NS, NAME_ELEMENT_SCHEMA);
@@ -104,13 +106,15 @@ public class WSDLLoader {
 			for(int index = 0; index < imports.getLength(); ++index) {
 				Element wsdlImport = (Element)imports.item(index);
 				String namespace = wsdlImport.getAttribute("namespace");
-				if (processedDefinitions.contains(namespace)) {
+				String location = wsdlImport.getAttribute("location");
+				String absoluteLocation = getURL(baseURL, location).toExternalForm();
+				String importKey = namespace + " " + absoluteLocation;
+				if (processedDefinitions.contains(importKey)) {
 					// "wsdl4j" does not handle circular dependencies properly;
 					// therefore, remove circular imports.
 					wsdlImport.getParentNode().removeChild(wsdlImport);
 					continue;
 				}
-				String location = wsdlImport.getAttribute("location");
 				String fileName = String.format(filenameTemplate, filenameIndex++);
 				Map<String, InputStream> importedWsdls = new WSDLLoader().load(
 						wsdlURL, location, filenameTemplate, processedDefinitions);
