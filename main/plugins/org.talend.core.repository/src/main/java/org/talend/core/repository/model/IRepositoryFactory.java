@@ -428,4 +428,8 @@ public interface IRepositoryFactory {
     public List<ILockBean> getAllRemoteLocks();
 
     public void loadProjectAndSetContext(IProject eclipseProject) throws PersistenceException;
+
+    public boolean isRepositoryBusy();
+
+    public RepositoryWorkUnit getWorkUnitInProgress();
 }

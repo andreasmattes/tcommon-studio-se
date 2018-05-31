@@ -24,6 +24,7 @@
 				<talendType type="id_Byte" />
 				<talendType type="id_byte[]">
                     <dbType type="Binary" default="true" />
+                    <dbType type="String"/>
                 </talendType>
 				<talendType type="id_Character" />
 				<talendType type="id_Date">

@@ -132,6 +132,7 @@ import org.talend.repository.documentation.ERepositoryActionName;
 import org.talend.repository.model.IProxyRepositoryFactory;
 import org.talend.repository.model.RepositoryConstants;
 import org.talend.utils.io.FilesUtils;
+
 import orgomg.cwm.objectmodel.core.ModelElement;
 
 /**
@@ -2320,4 +2321,11 @@ public final class ProxyRepositoryFactory implements IProxyRepositoryFactory {
         return repositoryFactoryFromProvider.getAllRemoteLocks();
     }
 
+    public boolean isRepositoryBusy() {
+        return repositoryFactoryFromProvider.isRepositoryBusy();
+    }
+
+    public RepositoryWorkUnit getWorkUnitInProgress() {
+        return repositoryFactoryFromProvider.getWorkUnitInProgress();
+    }
 }

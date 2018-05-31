@@ -101,6 +101,8 @@ public abstract class AContextualAction extends Action implements ITreeContextua
 
     private IRepositoryNode node;
 
+    private ISelection selection;
+
     @Override
     public boolean isEditAction() {
         return editAction;
@@ -245,12 +247,23 @@ public abstract class AContextualAction extends Action implements ITreeContextua
         this.workbenchPart = workbenchPart;
     }
 
+    public void clearSelection4DoubleClick() {
+        this.selection = null;
+    }
+
+    public ISelection getSelection() {
+        if (this.selection == null) {
+            this.selection = initSelection();
+        }
+        return this.selection;
+    }
+
     /**
      * The repository view selection.
      * 
      * @return the selection
      */
-    public ISelection getSelection() {
+    private ISelection initSelection() {
         if (specialSelectionProvider != null) {
             return specialSelectionProvider.getSelection();
         }
@@ -370,12 +383,23 @@ public abstract class AContextualAction extends Action implements ITreeContextua
         this.isToolbar = isToolbar;
     }
 
+    public void setCurrentRepositoryNode(RepositoryNode node) {
+        this.node = node;
+    }
+
+    public RepositoryNode getCurrentRepositoryNode() {
+        if (this.node == null) {
+            this.node = initCurrentRepositoryNode();
+        }
+        return (RepositoryNode) this.node;
+    }
+
     /**
      * DOC qzhang Comment method "getCurrentRepositoryNode".
      * 
      * @return
      */
-    protected RepositoryNode getCurrentRepositoryNode() {
+    protected RepositoryNode initCurrentRepositoryNode() {
         ISelection selection;
         IWorkbenchPage activePage = getActivePage();
         if (activePage == null) {
@@ -748,5 +772,10 @@ public abstract class AContextualAction extends Action implements ITreeContextua
 
     public void setUnloadResourcesAfter(boolean unloadResourcesAfter) {
         this.unloadResourcesAfter = unloadResourcesAfter;
+    }
+
+    @Override
+    public ITreeContextualAction clone() throws CloneNotSupportedException {
+        return (ITreeContextualAction) super.clone();
     }
 }
