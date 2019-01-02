@@ -218,6 +218,10 @@ public final class XsdMetadataUtils {
                     break;
                 }
             }
+            if (node == null) {
+            	// no declaration in the present XSD
+            	return;
+            }
             node = populationUtil.getSchemaTree(xsdSchema, node);
             orderId = 1;
             loopElementFound = false;
